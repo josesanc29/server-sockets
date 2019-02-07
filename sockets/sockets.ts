@@ -7,15 +7,19 @@ import { Usuario } from "../clases/usuario";
 
 export const usuariosConectados = new UsuariosLista();
 
-export const conectarCliente = ( cliente: Socket ) => {
+export const conectarCliente = ( cliente: Socket , socketIO: socketIO.Server) => {
     const usuario = new Usuario ( cliente.id);
     usuariosConectados.agregarUsuario(usuario);
+    // socketIO.emit('usuarios-activos', usuariosConectados.getLista());
+    
 }
 
-export const desconectar = ( cliente: Socket )=>{
+export const desconectar = ( cliente: Socket , socketIO: socketIO.Server)=>{
     cliente.on('disconnect', ()=>{
         console.log('Cliente desconectado');
         usuariosConectados.borrarUsuario(cliente.id);
+        socketIO.emit('usuarios-activos', usuariosConectados.getLista());
+
     });
 }
 //Escuchar mensaje
@@ -25,15 +29,23 @@ export const mensaje = ( cliente: Socket , socketIO: socketIO.Server ) =>{
         socketIO.emit('mensaje-nuevo', payload );
     });
 }
+
 //Configurar-usuario
 export const configurarUsuario = ( cliente: Socket , socketIO: socketIO.Server ) =>{    
     cliente.on('configurar-usuario' , (payload:{ nombre: string}, callBack: Function)=>{
-        // console.log('Configurando Usuario', payload.nombre);
-        // socketIO.emit('mensaje-nuevo', payload );
         usuariosConectados.actualizaNombre(cliente.id , payload.nombre);
+        socketIO.emit('usuarios-activos', usuariosConectados.getLista());
         callBack({
             ok: true,
             mensaje : `Usuario ${payload.nombre} configurado`,
         })
-    });
+ });
 }
+
+//Obtener Usuarios
+export const obtenerUsuariosActivos = ( cliente: Socket , socketIO: socketIO.Server) =>{
+    cliente.on('obtener-usuarios' , ()=>{
+        socketIO.emit('usuarios-activos', usuariosConectados.getLista());
+    })
+}
+
